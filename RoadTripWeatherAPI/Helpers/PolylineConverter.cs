@@ -1,13 +1,12 @@
 ﻿using GoogleMapsApi.Entities.Common;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace RoadTripWeatherAPI.Helpers
 {
-    public class PolylineConverter
+    // Code taken directly from https://stackoverflow.com/a/38583403
+    public static class PolylineConverter
     {
         /// <summary>
         /// Decodes the specified polyline string.

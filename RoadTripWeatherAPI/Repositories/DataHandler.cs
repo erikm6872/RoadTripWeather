@@ -2,7 +2,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using GoogleMapsApi.Entities.Directions.Response;
@@ -13,6 +12,7 @@ using RoadTripWeatherAPI.Models.Forecast;
 using RoadTripWeatherAPI.Models.WeatherRoute;
 using RoadTripWeatherAPI.Helpers;
 using GoogleMapsApi.Entities.Common;
+using RoadTripWeatherAPI.Exceptions;
 
 namespace RoadTripWeatherAPI.Repositories
 {
@@ -25,14 +25,26 @@ namespace RoadTripWeatherAPI.Repositories
             _config = config;
         }
 
-        public async Task<IEnumerable<HourlyWeather>> GetWeatherForSteps(string origin, string destination)
+        public async Task<IEnumerable<HourlyWeather>> GetHourlyWeatherForRoute(string origin, string destination)
         {
             var dirs = await GetDirections(origin, destination);
-            
-            int numHours = ((dirs.Routes.First().Legs.First().Duration.Value.Days * 24) + (dirs.Routes.First().Legs.First().Duration.Value.Hours));
+
+            // If no routes are returned, there's been an error with Google Maps
+            if (dirs.Routes == null || !dirs.Routes.Any())
+                throw new NoRoutesException();
+
+            // Calculate total number of hours in route
+            int numHours = 0;
+            foreach(var r in dirs.Routes)
+            {
+                foreach(var l in r.Legs)
+                {
+                    numHours += (l.Duration.Value.Days * 24) + l.Duration.Value.Hours;
+                }
+            }
 
             if (numHours > 48)
-                throw new NotImplementedException("OpenWeatherMap API only supports hourly forecasts 48 hours in advance.");
+                throw new SourceAPILimitationException("OpenWeatherMap API only supports hourly forecasts 48 hours in advance.");
 
             // Build full list of polyline points
             List<Location> polyline = new List<Location>();
@@ -72,7 +84,7 @@ namespace RoadTripWeatherAPI.Repositories
 
         public async Task<DirectionsResponse> GetDirections(string origin, string destination)
         {
-            var key = _config.GetSection("ApiKeys").GetSection("Google").Value;
+            var key = ValidateAPIKey(_config.GetSection("ApiKeys").GetSection("Google"));
 
             var directions_input = new DirectionsRequest()
             {
@@ -89,7 +101,7 @@ namespace RoadTripWeatherAPI.Repositories
         public async Task<WeatherResponse> GetWeatherByCoords(double lat, double lon)
         {
             string baseUrl = _config.GetSection("ApiEndpoints").GetSection("OpenWeatherMaps").Value;
-            string owmKey = _config.GetSection("ApiKeys").GetSection("OpenWeatherMaps").Value;
+            string owmKey = ValidateAPIKey(_config.GetSection("ApiKeys").GetSection("OpenWeatherMaps"));
 
             string url = baseUrl + $"?lat={lat}&lon={lon}&exclude=current,daily,minutely&units=imperial&appid={owmKey}";
 
@@ -108,5 +120,12 @@ namespace RoadTripWeatherAPI.Repositories
             return dtDateTime;
         }
 
+        private static string ValidateAPIKey(IConfigurationSection section)
+        {
+            if (section.Value == "{API Key}")
+                throw new InvalidAPIKeyException($"{section.Path} is not defined in appsettings.json");
+            else
+                return section.Value;
+        }
     }
 }

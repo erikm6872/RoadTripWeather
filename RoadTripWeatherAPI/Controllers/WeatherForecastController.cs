@@ -1,12 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using Newtonsoft.Json;
 using RoadTripWeatherAPI.Repositories;
-using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
 namespace RoadTripWeatherAPI.Controllers
@@ -32,7 +27,7 @@ namespace RoadTripWeatherAPI.Controllers
         public async Task<IActionResult> Get(string origin, string destination)
         {
             var dataHandler = new DataHandler(_config);
-            var ret = await dataHandler.GetWeatherForSteps(origin, destination);
+            var ret = await dataHandler.GetHourlyWeatherForRoute(origin, destination);
 
             return Ok(ret);
         }
@@ -42,7 +37,7 @@ namespace RoadTripWeatherAPI.Controllers
         public async Task<IActionResult> Get()
         {
             var dataHandler = new DataHandler(_config);
-            var ret = await dataHandler.GetWeatherForSteps(testOrigin, testDest);
+            var ret = await dataHandler.GetHourlyWeatherForRoute(testOrigin, testDest);
 
             return Ok(ret);
         }

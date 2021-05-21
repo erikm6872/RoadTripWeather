@@ -6,6 +6,9 @@ using System.Text;
 namespace RoadTripWeatherAPI.Helpers
 {
     // Code taken directly from https://stackoverflow.com/a/38583403
+    /// <summary>
+    /// Google Polyline Converter (Encoder and Decoder)
+    /// </summary>
     public static class PolylineConverter
     {
         /// <summary>
